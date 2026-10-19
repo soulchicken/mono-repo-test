@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Changeset 노트 작성'
+  short_description: '패키지 변경을 분석해 버전 증가 종류와 한국어 업데이트 노트를 작성합니다'
+  default_prompt: '$changeset-notes 현재 변경사항에 맞는 changeset을 작성하고 예상 버전도 확인해줘.'
