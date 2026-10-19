@@ -5,9 +5,15 @@ on:
     branches:
       - main
     types: [opened, synchronize, reopened, edited, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      pull_request_number:
+        description: 제목과 릴리스 준비 상태를 검사할 main 대상 PR 번호
+        required: true
+        type: string
 
 concurrency:
-  group: release-pr-${{ github.event.pull_request.number }}
+  group: release-pr-${{ github.event.pull_request.number || inputs.pull_request_number }}
   cancel-in-progress: true
 
 jobs:
@@ -21,18 +27,26 @@ jobs:
 
     steps:
       - name: Enforce release branches
+        id: candidate
         uses: actions/github-script@v7
         with:
           script: |
-            const pr = context.payload.pull_request
-            if (pr.head.ref !== 'develop' || pr.head.repo.full_name !== process.env.GITHUB_REPOSITORY) {
-              throw new Error('Open release PRs to main from this repository\'s develop branch.')
+            const number = Number(context.payload.pull_request?.number ?? context.payload.inputs?.pull_request_number)
+            if (!Number.isSafeInteger(number) || number < 1) {
+              throw new Error('Specify a valid pull request number.')
             }
+            const { data: pr } = await github.rest.pulls.get({ ...context.repo, pull_number: number })
+            if (pr.state !== 'open' || pr.base.ref !== 'main' || pr.head.ref !== 'develop' || pr.head.repo.full_name !== process.env.GITHUB_REPOSITORY) {
+              throw new Error('Choose an open develop → main PR from this repository.')
+            }
+            core.setOutput('number', pr.number)
+            core.setOutput('base_sha', pr.base.sha)
+            core.setOutput('head_sha', pr.head.sha)
 
       - name: Checkout release candidate
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ steps.candidate.outputs.head_sha }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -43,22 +57,26 @@ jobs:
 
       - name: Validate release and update PR title
         uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ steps.candidate.outputs.number }}
+          BASE_SHA: ${{ steps.candidate.outputs.base_sha }}
+          HEAD_SHA: ${{ steps.candidate.outputs.head_sha }}
         with:
           script: |
             const { execFileSync } = require('node:child_process')
-            const pr = context.payload.pull_request
+            const number = Number(process.env.PR_NUMBER)
             const metadata = JSON.parse(execFileSync('node', [
-              'scripts/release-pr.mjs', pr.base.sha, pr.head.sha,
+              'scripts/release-pr.mjs', process.env.BASE_SHA, process.env.HEAD_SHA,
             ], { encoding: 'utf8' }))
             const { data: current } = await github.rest.pulls.get({
-              ...context.repo, pull_number: pr.number,
+              ...context.repo, pull_number: number,
             })
-            if (current.head.sha !== pr.head.sha || current.base.sha !== pr.base.sha) {
+            if (current.head.sha !== process.env.HEAD_SHA || current.base.sha !== process.env.BASE_SHA) {
               throw new Error('The release branches changed. Re-run this workflow on the latest PR.')
             }
             if (current.title !== metadata.title) {
               await github.rest.pulls.update({
-                ...context.repo, pull_number: pr.number, title: metadata.title,
+                ...context.repo, pull_number: number, title: metadata.title,
               })
             }
             await core.summary

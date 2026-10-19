@@ -1,3 +1,3 @@
-export function button(label) {
-  return { type: 'button', label }
+export function button(label, variant = 'primary') {
+  return { type: 'button', label, variant }
 }

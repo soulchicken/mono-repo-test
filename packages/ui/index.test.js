@@ -8,3 +8,8 @@ test('button keeps its label', testOptions, () => {
   assert.equal(result.type, 'button')
   assert.equal(result.label, '확인')
 })
+
+test('button supports an optional variant without changing existing arguments', testOptions, () => {
+  assert.equal(button('확인').variant, 'primary')
+  assert.equal(button('취소', 'secondary').variant, 'secondary')
+})

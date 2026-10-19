@@ -98,11 +98,31 @@ changeset은 기능 코드와 함께 커밋합니다. 기능 개발자가 직접
 - develop push + QA 통과: 버전 PR 생성·갱신
 - main PR: 출발 브랜치, 미소비 changeset, CHANGELOG 검사 및 제목 갱신
 - main push + QA 통과: annotated tag 생성·push
-- main 규칙: merge commit, 두 필수 검사, 최신 브랜치 요구
+- 저장소 병합 방식: merge commit만 허용
+
+현재 비공개 저장소의 요금제에서는 ruleset을 활성화할 수 없습니다.
+CI 검사와 PR 제목 갱신은 동작하지만, 검사 실패 시 병합을 강제로 막는 기능은 적용되지 않습니다.
+샘플 실습에서는 QA와 Release PR Metadata의 통과를 직접 확인한 뒤 병합해주세요.
+GitHub Pro 또는 ruleset을 사용할 수 있는 저장소에서는
+`.github/main-release-ruleset.json`을 적용해 두 검사와 최신 브랜치를 필수 조건으로 설정할 수 있습니다.
 
 별도 PAT 없이 기본 `GITHUB_TOKEN`을 사용합니다.
 GitHub Settings → Actions → General에서 **Allow GitHub Actions to create and approve pull requests**가 켜져 있어야 합니다.
 자동 생성한 버전 PR의 QA는 `workflow_dispatch`로 명시적으로 실행합니다.
+
+자동 실행이 시작되지 않거나 실패 후 재시도하려면 **Actions → CI & Releases → Run workflow**를 사용합니다.
+
+| Branch                    | task            | 동작                                    |
+| ------------------------- | --------------- | --------------------------------------- |
+| develop                   | prepare-version | QA 통과 후 버전 PR 생성·갱신            |
+| changeset-release/develop | check           | 버전 PR의 QA만 실행                     |
+| main                      | tag-release     | QA와 릴리스 준비 검사 통과 후 태그 생성 |
+
+기본 task인 `check`는 QA만 수행합니다. 버전 준비와 태그 작업은 지정한 브랜치에서만 실행됩니다.
+
+릴리스 PR 제목 갱신이 시작되지 않으면 **Actions → Release PR → Run workflow**에서
+브랜치 `develop`과 해당 PR 번호(`pull_request_number`)를 입력합니다.
+이 실행도 미소비 changeset과 CHANGELOG를 먼저 검사한 뒤 실제 버전으로 제목을 갱신합니다.
 
 원본 코드와 현재 저장소의 설정을 함께 살펴볼 위치:
 
