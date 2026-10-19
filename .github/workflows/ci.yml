@@ -1,0 +1,104 @@
+name: CI & Releases
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qa:
+    name: QA & Build Verification
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - run: pnpm demo
+
+  prepare-version:
+    name: Prepare Version Packages PR
+    needs: qa
+    if: github.event_name == 'push' && github.ref_name == 'develop' && github.repository == 'soulchicken/mono-repo-test'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Create or update version PR into develop
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          version: pnpm version-packages
+          title: 'chore: version packages'
+          commit: 'chore: version packages'
+          createGithubReleases: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run QA on the generated version branch
+        if: steps.changesets.outputs.pullRequestNumber != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              ...context.repo,
+              workflow_id: 'ci.yml',
+              ref: 'changeset-release/develop',
+            })
+
+  tag-packages:
+    name: Push Release Tags
+    needs: qa
+    if: github.event_name == 'push' && github.ref_name == 'main' && github.repository == 'soulchicken/mono-repo-test'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Verify prepared release
+        run: |
+          if git rev-parse --verify HEAD^ >/dev/null 2>&1; then
+            node scripts/release-pr.mjs HEAD^ HEAD
+          fi
+      - name: Tag the main merge commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          pnpm tag-packages

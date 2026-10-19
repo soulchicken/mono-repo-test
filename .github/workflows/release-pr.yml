@@ -1,0 +1,70 @@
+name: Release PR
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+
+concurrency:
+  group: release-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  metadata:
+    name: Release PR Metadata
+    if: github.repository == 'soulchicken/mono-repo-test'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Enforce release branches
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request
+            if (pr.head.ref !== 'develop' || pr.head.repo.full_name !== process.env.GITHUB_REPOSITORY) {
+              throw new Error('Open release PRs to main from this repository\'s develop branch.')
+            }
+
+      - name: Checkout release candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Validate release and update PR title
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { execFileSync } = require('node:child_process')
+            const pr = context.payload.pull_request
+            const metadata = JSON.parse(execFileSync('node', [
+              'scripts/release-pr.mjs', pr.base.sha, pr.head.sha,
+            ], { encoding: 'utf8' }))
+            const { data: current } = await github.rest.pulls.get({
+              ...context.repo, pull_number: pr.number,
+            })
+            if (current.head.sha !== pr.head.sha || current.base.sha !== pr.base.sha) {
+              throw new Error('The release branches changed. Re-run this workflow on the latest PR.')
+            }
+            if (current.title !== metadata.title) {
+              await github.rest.pulls.update({
+                ...context.repo, pull_number: pr.number, title: metadata.title,
+              })
+            }
+            await core.summary
+              .addHeading(metadata.title)
+              .addTable([
+                [{ data: 'Package', header: true }, { data: 'Before', header: true }, { data: 'After', header: true }],
+                ...metadata.releases.map(pkg => [pkg.name, pkg.oldVersion ?? 'new', pkg.version]),
+              ])
+              .write()

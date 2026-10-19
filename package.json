@@ -1,0 +1,20 @@
+{
+  "name": "mono-repo-test",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.34.7",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "demo": "pnpm --filter @sample/web start",
+    "test": "node --test scripts/*.test.mjs && pnpm -r --if-present run test",
+    "changeset": "changeset",
+    "version-packages": "changeset version && pnpm install --lockfile-only",
+    "tag-packages": "node scripts/tag-packages.mjs"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.31.1"
+  }
+}
