@@ -120,6 +120,10 @@ GitHub Settings → Actions → General에서 **Allow GitHub Actions to create a
 
 기본 task인 `check`는 QA만 수행합니다. 버전 준비와 태그 작업은 지정한 브랜치에서만 실행됩니다.
 
+릴리스 PR 제목 갱신이 시작되지 않으면 **Actions → Release PR → Run workflow**에서
+브랜치 `develop`과 해당 PR 번호(`pull_request_number`)를 입력합니다.
+이 실행도 미소비 changeset과 CHANGELOG를 먼저 검사한 뒤 실제 버전으로 제목을 갱신합니다.
+
 원본 코드와 현재 저장소의 설정을 함께 살펴볼 위치:
 
 - [.changeset/config.json](.changeset/config.json)
