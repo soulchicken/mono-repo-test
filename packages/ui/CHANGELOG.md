@@ -1,5 +1,11 @@
 # @sample/ui
 
+## 0.1.1
+
+### Patch Changes
+
+- ccee168: 버튼 variant가 null이면 기본 primary variant를 사용하도록 수정합니다.
+
 ## 0.1.0
 
 ### Minor Changes
