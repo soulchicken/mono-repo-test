@@ -80,7 +80,7 @@ jobs:
             })
 
   tag-packages:
-    name: Push Release Tags
+    name: Publish Package Releases
     needs: qa
     if: github.ref_name == 'main' && github.repository == 'soulchicken/mono-repo-test' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.task == 'tag-release'))
     runs-on: ubuntu-latest
@@ -108,3 +108,26 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           pnpm tag-packages
+      - name: Publish GitHub Releases from package changelogs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { execFileSync } = require('node:child_process')
+            const releases = JSON.parse(execFileSync('node', ['scripts/release-notes.mjs'], { encoding: 'utf8' }))
+            for (const { tag, body } of releases) {
+              try {
+                await github.rest.repos.getReleaseByTag({ ...context.repo, tag })
+                core.info(`Release already exists: ${tag}`)
+                continue
+              } catch (error) {
+                if (error.status !== 404) throw error
+              }
+              const { data } = await github.rest.repos.createRelease({
+                ...context.repo,
+                tag_name: tag,
+                name: tag,
+                body,
+                make_latest: 'false',
+              })
+              await core.summary.addLink(tag, data.html_url).addBreak().write()
+            }

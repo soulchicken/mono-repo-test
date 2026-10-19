@@ -1,6 +1,6 @@
 # Changesets Playground
 
-패키지별 CHANGELOG, 버전 PR, 릴리스 PR 제목, GitHub 태그를 연습하는 샘플 모노레포입니다.
+패키지별 CHANGELOG, 버전 PR, 릴리스 PR 제목, GitHub 태그와 Release를 연습하는 샘플 모노레포입니다.
 모든 패키지는 private이며 npm 게시나 서비스 배포는 하지 않습니다.
 
 ## 구성
@@ -53,6 +53,9 @@ release: @sample/ui@0.1.0, @sample/web@0.0.1
 
 태그는 버전을 준비한 develop 커밋이 아니라 **develop → main 병합 커밋**을 가리킵니다.
 `0.0.0`인 config에는 태그가 생성되지 않습니다.
+태그 생성 후에는 패키지별 GitHub Release도 생성됩니다.
+Release 제목은 태그명이며, 설명에는 해당 태그에 저장된 CHANGELOG의 해당 버전 항목만 들어갑니다.
+같은 작업을 다시 실행하면 기존 태그와 Release를 유지합니다.
 마지막으로 `main` → `develop` 역병합 PR을 병합해 브랜치 이력을 동기화합니다.
 
 ## 직접 기능 PR 만들기
@@ -97,7 +100,7 @@ changeset은 기능 코드와 함께 커밋합니다. 기능 개발자가 직접
 
 - develop push + QA 통과: 버전 PR 생성·갱신
 - main PR: 출발 브랜치, 미소비 changeset, CHANGELOG 검사 및 제목 갱신
-- main push + QA 통과: annotated tag 생성·push
+- main push + QA 통과: annotated tag 생성·push 후 패키지별 GitHub Release 생성
 - 저장소 병합 방식: merge commit만 허용
 
 현재 비공개 저장소의 요금제에서는 ruleset을 활성화할 수 없습니다.
@@ -112,11 +115,11 @@ GitHub Settings → Actions → General에서 **Allow GitHub Actions to create a
 
 자동 실행이 시작되지 않거나 실패 후 재시도하려면 **Actions → CI & Releases → Run workflow**를 사용합니다.
 
-| Branch                    | task            | 동작                                    |
-| ------------------------- | --------------- | --------------------------------------- |
-| develop                   | prepare-version | QA 통과 후 버전 PR 생성·갱신            |
-| changeset-release/develop | check           | 버전 PR의 QA만 실행                     |
-| main                      | tag-release     | QA와 릴리스 준비 검사 통과 후 태그 생성 |
+| Branch                    | task            | 동작                                       |
+| ------------------------- | --------------- | ------------------------------------------ |
+| develop                   | prepare-version | QA 통과 후 버전 PR 생성·갱신               |
+| changeset-release/develop | check           | 버전 PR의 QA만 실행                        |
+| main                      | tag-release     | QA와 릴리스 준비 검사 후 태그·Release 생성 |
 
 기본 task인 `check`는 QA만 수행합니다. 버전 준비와 태그 작업은 지정한 브랜치에서만 실행됩니다.
 
