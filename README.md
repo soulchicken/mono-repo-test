@@ -98,7 +98,13 @@ changeset은 기능 코드와 함께 커밋합니다. 기능 개발자가 직접
 - develop push + QA 통과: 버전 PR 생성·갱신
 - main PR: 출발 브랜치, 미소비 changeset, CHANGELOG 검사 및 제목 갱신
 - main push + QA 통과: annotated tag 생성·push
-- main 규칙: merge commit, 두 필수 검사, 최신 브랜치 요구
+- 저장소 병합 방식: merge commit만 허용
+
+현재 비공개 저장소의 요금제에서는 ruleset을 활성화할 수 없습니다.
+CI 검사와 PR 제목 갱신은 동작하지만, 검사 실패 시 병합을 강제로 막는 기능은 적용되지 않습니다.
+샘플 실습에서는 QA와 Release PR Metadata의 통과를 직접 확인한 뒤 병합해주세요.
+GitHub Pro 또는 ruleset을 사용할 수 있는 저장소에서는
+`.github/main-release-ruleset.json`을 적용해 두 검사와 최신 브랜치를 필수 조건으로 설정할 수 있습니다.
 
 별도 PAT 없이 기본 `GITHUB_TOKEN`을 사용합니다.
 GitHub Settings → Actions → General에서 **Allow GitHub Actions to create and approve pull requests**가 켜져 있어야 합니다.
