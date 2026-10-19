@@ -13,3 +13,7 @@ test('button supports an optional variant without changing existing arguments', 
   assert.equal(button('확인').variant, 'primary')
   assert.equal(button('취소', 'secondary').variant, 'secondary')
 })
+
+test('button uses the primary variant when null is passed', testOptions, () => {
+  assert.equal(button('확인', null).variant, 'primary')
+})
