@@ -1,3 +1,9 @@
+import { link } from '@sample/ui/link'
 import { home } from './index.js'
 
-console.log(JSON.stringify(home(), null, 2))
+const page = {
+  ...home(),
+  documentation: link('실습 안내', 'https://github.com/soulchicken/mono-repo-test#readme'),
+}
+
+console.log(JSON.stringify(page, null, 2))
