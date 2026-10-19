@@ -6,6 +6,12 @@ on:
   push:
     branches: [main, develop]
   workflow_dispatch:
+    inputs:
+      task:
+        description: 실행할 작업
+        type: choice
+        options: [check, prepare-version, tag-release]
+        default: check
 
 permissions:
   contents: read
@@ -34,7 +40,7 @@ jobs:
   prepare-version:
     name: Prepare Version Packages PR
     needs: qa
-    if: github.event_name == 'push' && github.ref_name == 'develop' && github.repository == 'soulchicken/mono-repo-test'
+    if: github.ref_name == 'develop' && github.repository == 'soulchicken/mono-repo-test' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.task == 'prepare-version'))
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -76,7 +82,7 @@ jobs:
   tag-packages:
     name: Push Release Tags
     needs: qa
-    if: github.event_name == 'push' && github.ref_name == 'main' && github.repository == 'soulchicken/mono-repo-test'
+    if: github.ref_name == 'main' && github.repository == 'soulchicken/mono-repo-test' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.task == 'tag-release'))
     runs-on: ubuntu-latest
     permissions:
       contents: write

@@ -110,6 +110,16 @@ GitHub Pro 또는 ruleset을 사용할 수 있는 저장소에서는
 GitHub Settings → Actions → General에서 **Allow GitHub Actions to create and approve pull requests**가 켜져 있어야 합니다.
 자동 생성한 버전 PR의 QA는 `workflow_dispatch`로 명시적으로 실행합니다.
 
+자동 실행이 시작되지 않거나 실패 후 재시도하려면 **Actions → CI & Releases → Run workflow**를 사용합니다.
+
+| Branch                    | task            | 동작                                    |
+| ------------------------- | --------------- | --------------------------------------- |
+| develop                   | prepare-version | QA 통과 후 버전 PR 생성·갱신            |
+| changeset-release/develop | check           | 버전 PR의 QA만 실행                     |
+| main                      | tag-release     | QA와 릴리스 준비 검사 통과 후 태그 생성 |
+
+기본 task인 `check`는 QA만 수행합니다. 버전 준비와 태그 작업은 지정한 브랜치에서만 실행됩니다.
+
 원본 코드와 현재 저장소의 설정을 함께 살펴볼 위치:
 
 - [.changeset/config.json](.changeset/config.json)
